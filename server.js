@@ -3,13 +3,14 @@ const PORT = process.env.PORT || 3001;
 const mysql = require("mysql2");
 const inquirer = require("inquirer");
 const cTable = require("console.table");
+const helper = require("./src/helper");
+const { allRolesString, allDepartmentString } = require("./src/helper");
 const app = express();
 
 // Middleware
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
-//
 const db = mysql.createConnection(
   {
     host: "localhost",
@@ -17,31 +18,48 @@ const db = mysql.createConnection(
     user: "root",
     // MySQL password
     password: "71219212529",
-    database: "classlist_db",
+    database: "employee_tracker",
   },
-  console.log(`Connected to the classlist_db database.`)
+  console.log(`Connected to the employee_tracker database.`)
 );
 
-inquirer
-  .prompt([
-    {
-      type: "list",
-      name: "choice",
-      message: "What would you like to do?",
-      choices: [
-        "View all employees",
-        "Add employee",
-        "Update employee role",
-        "View all roles",
-        "Add role",
-        "View all departments",
-        "Add departments",
-        "Quit",
-      ],
-    },
-  ])
-  .then((answers) => console.log(answers));
-
+function startPrompts() {
+  inquirer
+    .prompt([
+      {
+        type: "list",
+        name: "choice",
+        message: "What would you like to do?",
+        choices: [
+          "View all employees",
+          "Add employee",
+          "Update employee role",
+          "View all roles",
+          "Add role",
+          "View all departments",
+          "Add departments",
+          "Quit",
+        ],
+      },
+    ])
+    .then((answers) => {
+      const choice = answers.choice;
+      switch (choice) {
+        case "View all departments":
+          db.query(allDepartmentString(), (err, results) => {
+            console.table(results);
+            startPrompts();
+          });
+          break;
+        case "View all roles":
+          db.query(allRolesString(), (err, results) => {
+            console.table(results);
+            startPrompts();
+          });
+      }
+    });
+}
+startPrompts();
 // Default response for any other request (Not Found)
 app.use((req, res) => {
   res.status(404).end();
