@@ -9,7 +9,4 @@ module.exports = {
   allEmployeesString: () => {
     return `SELECT e.id, e.first_name, e.last_name, r.title,d.name, r.salary, m.first_name AS Manager FROM employee e JOIN role r ON r.id=e.role_id JOIN homework.department d ON r.department_id=d.id LEFT JOIN employee m ON e.manager_id=m.id ORDER BY e.id ASC;`;
   },
-  addDepartmentString: (department) => {
-    return `INSERT INTO department (name) VALUES(${department});`;
-  },
 };

@@ -67,14 +67,14 @@ function startPrompts() {
           });
           break;
         case "Add department":
-          addDepartmentPrompt();
+          addDepartmentPrompts();
           break;
       }
     });
 }
-startPrompts();
+// startPrompts();
 
-function addDepartmentPrompt() {
+function addDepartmentPrompts() {
   inquirer
     .prompt([
       {
@@ -90,16 +90,63 @@ function addDepartmentPrompt() {
         `INSERT INTO department (name) VALUES (?);`,
         department,
         (err, result) => {
-          err ? console.log(err) : console.log(result);
+          err
+            ? console.log(err)
+            : console.log(`Added ${department} to the database.`);
           startPrompts();
         }
       );
     });
 }
+function addRolePrompts() {
+  let array = [];
+  db.query(allDepartmentString(), (err, result) => {
+    result.forEach((element) => array.push(element.name));
+  });
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "role",
+        message: "What is the name of the role?",
+      },
+      {
+        type: "input",
+        name: "salary",
+        message: "What is the salary of the role?",
+      },
+      {
+        type: "list",
+        name: "department",
+        message: "Which department does the role belong to?",
+        choices: array,
+      },
+    ])
+    .then((results) => {
+      let { role, salary, department } = results;
+      // To find department_id from array of roles
+      const departmentId = array.indexOf(department);
 
+      db.query(
+        `INSERT INTO role(title,salary,department_id) VALUES ('${role}','${salary}','${
+          departmentId + 1
+        }');`,
+        (err, result) => {
+          err ? console.log(err) : console.log(`Added ${role} to database.`);
+        }
+      );
+    });
+}
+addRolePrompts();
 // If request (Not Found)
 app.use((req, res) => {
   res.status(404).end();
 });
+
+// db.query(allDepartmentString(), (err, result) => {
+//   let array = [];
+//   result.forEach((element) => array.push(element.name));
+//   console.log(array);
+// });
 
 // app.listen(PORT, () => console.log(`listening at PORT ${PORT}`));
