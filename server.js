@@ -69,6 +69,12 @@ function startPrompts() {
         case "Add department":
           addDepartmentPrompts();
           break;
+        case "Add role":
+          addRolePrompts();
+          break;
+        case "Add employee":
+          addEmployee();
+          break;
       }
     });
 }
@@ -103,6 +109,7 @@ function addRolePrompts() {
   db.query(allDepartmentString(), (err, result) => {
     result.forEach((element) => array.push(element.name));
   });
+
   inquirer
     .prompt([
       {
@@ -125,19 +132,82 @@ function addRolePrompts() {
     .then((results) => {
       let { role, salary, department } = results;
       // To find department_id from array of roles
-      const departmentId = array.indexOf(department);
+      const departmentId = array.indexOf(department) + 1;
 
       db.query(
-        `INSERT INTO role(title,salary,department_id) VALUES ('${role}','${salary}','${
-          departmentId + 1
-        }');`,
+        `INSERT INTO role(title,salary,department_id) VALUES ('${role}','${salary}','${departmentId}');`,
         (err, result) => {
           err ? console.log(err) : console.log(`Added ${role} to database.`);
+          startPrompts();
         }
       );
     });
 }
-addRolePrompts();
+
+function addEmployee() {
+  let rolesArray = [];
+  let managersArray = [];
+  db.query(allRolesString(), (err, result) => {
+    err
+      ? console.log(err)
+      : result.forEach((element) => rolesArray.push(element.title));
+    // console.log(rolesArray);
+  });
+  db.query(
+    `SELECT id, CONCAT(first_name," " ,last_name) AS Manager FROM employee;`,
+    (err, result) => {
+      if (err) {
+        console.log(err);
+      }
+      result.forEach((element) => {
+        managersArray.push(element.Manager);
+      });
+    }
+  );
+
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "first_name",
+        message: "What is the employee's first name?",
+      },
+      {
+        type: "input",
+        name: "last_name",
+        message: "What is the employee's last name?",
+      },
+      {
+        type: "list",
+        name: "role",
+        message: "What is the employee's role?",
+        choices: rolesArray,
+      },
+      {
+        type: "list",
+        name: "manager",
+        message: "Who is the employee's manager?",
+        choices: managersArray,
+      },
+    ])
+    .then((results) => {
+      let { first_name, last_name, role, manager } = results;
+      const managerId = managersArray.indexOf(manager) + 1;
+      const role_id = rolesArray.indexOf(role) + 1;
+
+      db.query(
+        `INSERT INTO employee (first_name,last_name,role_id,manager_id) VALUES ('${first_name}','${last_name}',${role_id},${managerId})`,
+        (err, results) => {
+          if (err) {
+            console.log(err);
+          }
+          console.log(`Added ${first_name + " " + last_name} to the database.`);
+        }
+      );
+      startPrompts();
+    });
+}
+
 // If request (Not Found)
 app.use((req, res) => {
   res.status(404).end();
