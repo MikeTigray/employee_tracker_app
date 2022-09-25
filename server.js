@@ -4,7 +4,12 @@ const mysql = require("mysql2");
 const inquirer = require("inquirer");
 const cTable = require("console.table");
 const helper = require("./src/helper");
-const { allRolesString, allDepartmentString } = require("./src/helper");
+const {
+  allRolesString,
+  allDepartmentString,
+  allEmployeesString,
+  addDepartmentString,
+} = require("./src/helper");
 const app = express();
 
 // Middleware
@@ -14,9 +19,7 @@ app.use(express.json());
 const db = mysql.createConnection(
   {
     host: "localhost",
-    // MySQL username,
     user: "root",
-    // MySQL password
     password: "71219212529",
     database: "employee_tracker",
   },
@@ -37,7 +40,7 @@ function startPrompts() {
           "View all roles",
           "Add role",
           "View all departments",
-          "Add departments",
+          "Add department",
           "Quit",
         ],
       },
@@ -56,11 +59,45 @@ function startPrompts() {
             console.table(results);
             startPrompts();
           });
+          break;
+        case "View all employees":
+          db.query(allEmployeesString(), (err, results) => {
+            console.table(results);
+            startPrompts();
+          });
+          break;
+        case "Add department":
+          addDepartmentPrompt();
+          break;
       }
     });
 }
 startPrompts();
-// Default response for any other request (Not Found)
+
+function addDepartmentPrompt() {
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "department",
+        message: "What is the name of the department?",
+      },
+    ])
+    .then((answer) => {
+      const department = answer.department;
+
+      db.query(
+        `INSERT INTO department (name) VALUES (?);`,
+        department,
+        (err, result) => {
+          err ? console.log(err) : console.log(result);
+          startPrompts();
+        }
+      );
+    });
+}
+
+// If request (Not Found)
 app.use((req, res) => {
   res.status(404).end();
 });
