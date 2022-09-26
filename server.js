@@ -214,16 +214,17 @@ function addEmployee() {
 function updateEmployee() {
   let employeeArray = [];
   let rolesArray = [];
-  db.query(
-    `SELECT id, CONCAT(first_name," " ,last_name) AS full_name FROM employee;`,
-    (err, results) => {
-      if (err) {
-        console.log(err);
+  db.promise()
+    .query(
+      `SELECT id, CONCAT(first_name," " ,last_name) AS full_name FROM employee;`,
+      (err, results) => {
+        if (err) {
+          console.log(err);
+        }
+        results.forEach((element) => employeeArray.push(element.full_name));
       }
-      results.forEach((element) => employeeArray.push(element.full_name));
-    }
-  );
-  console.log(employeeArray);
+    )
+    .then((data) => console.log(data));
 
   db.query(`SELECT title FROM role`, (err, results) => {
     if (err) {
@@ -233,22 +234,22 @@ function updateEmployee() {
     // console.log(rolesArray);
   });
 
-  inquirer
-    .prompt([
-      {
-        type: "list",
-        name: "employee",
-        message: "Which employee do you want to update?",
-        choices: employeeArray,
-      },
-      {
-        type: "list",
-        name: "role",
-        message: "Which role do you want to assign the selected employee?",
-        choices: rolesArray,
-      },
-    ])
-    .then((answers) => console.log(answers));
+  // inquirer
+  //   .prompt([
+  //     {
+  //       type: "list",
+  //       name: "role",
+  //       message: "Which role do you want to assign the selected employee?",
+  //       choices: rolesArray,
+  //     },
+  //     {
+  //       type: "list",
+  //       name: "employee",
+  //       message: "Which employee do you want to update?",
+  //       choices: employeeArray,
+  //     },
+  //   ])
+  //   .then((answers) => console.log(answers));
 }
 updateEmployee();
 // If request (Not Found)
