@@ -75,10 +75,14 @@ function startPrompts() {
         case "Add employee":
           addEmployee();
           break;
+        case "Update employee role":
+          updateEmployee();
+          break;
+        case "Quit":
+          return;
       }
     });
 }
-// startPrompts();
 
 function addDepartmentPrompts() {
   inquirer
@@ -151,7 +155,6 @@ function addEmployee() {
     err
       ? console.log(err)
       : result.forEach((element) => rolesArray.push(element.title));
-    // console.log(rolesArray);
   });
   db.query(
     `SELECT id, CONCAT(first_name," " ,last_name) AS Manager FROM employee;`,
@@ -208,6 +211,46 @@ function addEmployee() {
     });
 }
 
+function updateEmployee() {
+  let employeeArray = [];
+  let rolesArray = [];
+  db.query(
+    `SELECT id, CONCAT(first_name," " ,last_name) AS full_name FROM employee;`,
+    (err, results) => {
+      if (err) {
+        console.log(err);
+      }
+      results.forEach((element) => employeeArray.push(element.full_name));
+    }
+  );
+  console.log(employeeArray);
+
+  db.query(`SELECT title FROM role`, (err, results) => {
+    if (err) {
+      console.log(err);
+    }
+    results.forEach((element) => rolesArray.push(element.title));
+    // console.log(rolesArray);
+  });
+
+  inquirer
+    .prompt([
+      {
+        type: "list",
+        name: "employee",
+        message: "Which employee do you want to update?",
+        choices: employeeArray,
+      },
+      {
+        type: "list",
+        name: "role",
+        message: "Which role do you want to assign the selected employee?",
+        choices: rolesArray,
+      },
+    ])
+    .then((answers) => console.log(answers));
+}
+updateEmployee();
 // If request (Not Found)
 app.use((req, res) => {
   res.status(404).end();
