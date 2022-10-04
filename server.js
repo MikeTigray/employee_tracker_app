@@ -23,12 +23,12 @@ const db = mysql.createConnection(
   {
     host: "localhost",
     user: "root",
-    password: "",
+    password: "71219212529",
     database: "employee_tracker",
   },
   console.log(`Connected to the employee_tracker database.`)
 );
-// startPrompts();
+startPrompts();
 function startPrompts() {
   inquirer
     .prompt([
@@ -256,21 +256,24 @@ function updateEmployee() {
           const firstName = employee.split(" ")[0];
           const role_id = rolesArray.indexOf(role) + 1;
 
-          db.query(
-            `UPDATE employee SET role_id=${role_id} WHERE first_name="${firstName}";`,
-            (err, result) => {
-              err ? console.log(err) : console.log(result);
-              startPrompts();
-            }
-          );
+          db.promise()
+            .query(
+              `UPDATE employee SET role_id= ${role_id} WHERE first_name="${firstName}";`
+            )
+            .then((result) => {
+              db.query(allEmployeesString(), (err, result) =>
+                err ? console.log(err) : console.table(result)
+              );
 
-          // startPrompts();
-          // console.log(employeeArray);
-          // console.log(rolesArray);
-        });
+              startPrompts();
+            });
+
+          startPrompts();
+        })
+        .catch((err) => console.log(err));
     });
 }
-updateEmployee();
+
 // If request (Not Found)
 app.use((req, res) => {
   res.status(404).end();
