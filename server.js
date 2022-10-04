@@ -16,16 +16,19 @@ const app = express();
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
+let employeeArray = [];
+let rolesArray = [];
+
 const db = mysql.createConnection(
   {
     host: "localhost",
     user: "root",
-    password: "71219212529",
+    password: "",
     database: "employee_tracker",
   },
   console.log(`Connected to the employee_tracker database.`)
 );
-
+// startPrompts();
 function startPrompts() {
   inquirer
     .prompt([
@@ -79,7 +82,7 @@ function startPrompts() {
           updateEmployee();
           break;
         case "Quit":
-          return;
+          process.exit();
       }
     });
 }
@@ -210,57 +213,67 @@ function addEmployee() {
       startPrompts();
     });
 }
-
-function updateEmployee() {
-  let employeeArray = [];
-  let rolesArray = [];
-  db.promise()
+// Renders all employee's full names from query into roles array
+function getEmployees() {
+  return db
+    .promise()
     .query(
-      `SELECT id, CONCAT(first_name," " ,last_name) AS full_name FROM employee;`,
-      (err, results) => {
-        if (err) {
-          console.log(err);
-        }
-        results.forEach((element) => employeeArray.push(element.full_name));
-      }
-    )
-    .then((data) => console.log(data));
+      `SELECT id, CONCAT(first_name," " ,last_name) AS full_name FROM employee;`
+    );
+}
+// Renders all roles from query into roles array
+function getRoles() {
+  db.promise()
+    .query(`SELECT title FROM role`)
+    .then((result) => {
+      result[0].forEach((element) => rolesArray.push(element.title));
+    });
+}
+function updateEmployee() {
+  getEmployees()
+    .then((data) => {
+      getRoles();
 
-  db.query(`SELECT title FROM role`, (err, results) => {
-    if (err) {
-      console.log(err);
-    }
-    results.forEach((element) => rolesArray.push(element.title));
-    // console.log(rolesArray);
-  });
+      data[0].forEach((element) => employeeArray.push(element.full_name));
+    })
+    .then(() => {
+      inquirer
+        .prompt([
+          {
+            type: "list",
+            name: "employee",
+            message: "Which employee do you want to update?",
+            choices: employeeArray,
+          },
+          {
+            type: "list",
+            name: "role",
+            message: "Which role do you want to assign the selected employee?",
+            choices: rolesArray,
+          },
+        ])
+        .then(({ employee, role }) => {
+          const firstName = employee.split(" ")[0];
+          const role_id = rolesArray.indexOf(role) + 1;
 
-  // inquirer
-  //   .prompt([
-  //     {
-  //       type: "list",
-  //       name: "role",
-  //       message: "Which role do you want to assign the selected employee?",
-  //       choices: rolesArray,
-  //     },
-  //     {
-  //       type: "list",
-  //       name: "employee",
-  //       message: "Which employee do you want to update?",
-  //       choices: employeeArray,
-  //     },
-  //   ])
-  //   .then((answers) => console.log(answers));
+          db.query(
+            `UPDATE employee SET role_id=${role_id} WHERE first_name="${firstName}";`,
+            (err, result) => {
+              err ? console.log(err) : console.log(result);
+              startPrompts();
+            }
+          );
+
+          // startPrompts();
+          // console.log(employeeArray);
+          // console.log(rolesArray);
+        });
+    });
 }
 updateEmployee();
 // If request (Not Found)
 app.use((req, res) => {
   res.status(404).end();
 });
-
-// db.query(allDepartmentString(), (err, result) => {
-//   let array = [];
-//   result.forEach((element) => array.push(element.name));
-//   console.log(array);
-// });
 
 // app.listen(PORT, () => console.log(`listening at PORT ${PORT}`));
