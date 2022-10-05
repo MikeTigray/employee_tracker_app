@@ -142,7 +142,6 @@ function addRolePrompts() {
           },
         ])
         .then((results) => {
-          console.log(results);
           let { role, salary, department } = results;
 
           let department_id;
