@@ -3,19 +3,17 @@ const PORT = process.env.PORT || 3001;
 const mysql = require("mysql2");
 const inquirer = require("inquirer");
 const cTable = require("console.table");
-const helper = require("./src/helper");
 const {
   allRolesString,
   allDepartmentString,
   allEmployeesString,
-  addDepartmentString,
 } = require("./src/helper");
 const app = express();
 
-// Middleware
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
+// For update employee role function(Store employees and roles)
 let employeeArray = [];
 let rolesArray = [];
 
@@ -23,7 +21,7 @@ const db = mysql.createConnection(
   {
     host: "localhost",
     user: "root",
-    password: "71219212529",
+    password: "",
     database: "employee_tracker",
   },
   console.log(`Connected to the employee_tracker database.`)
@@ -142,7 +140,7 @@ function addRolePrompts() {
       const departmentId = array.indexOf(department) + 1;
 
       db.query(
-        `INSERT INTO role(title,salary,department_id) VALUES ('${role}','${salary}','${departmentId}');`,
+        `INSERT INTO role(title,salary,department_id) VALUES ('${role}','${salary}',${departmentId});`,
         (err, result) => {
           err ? console.log(err) : console.log(`Added ${role} to database.`);
           startPrompts();
@@ -201,16 +199,15 @@ function addEmployee() {
       const managerId = managersArray.indexOf(manager) + 1;
       const role_id = rolesArray.indexOf(role) + 1;
 
-      db.query(
-        `INSERT INTO employee (first_name,last_name,role_id,manager_id) VALUES ('${first_name}','${last_name}',${role_id},${managerId})`,
-        (err, results) => {
-          if (err) {
-            console.log(err);
-          }
+      db.promise()
+        .query(
+          `INSERT INTO employee (first_name,last_name,role_id,manager_id) VALUES ('${first_name}','${last_name}',${role_id},${managerId})`
+        )
+        .then((results) => {
           console.log(`Added ${first_name + " " + last_name} to the database.`);
-        }
-      );
-      startPrompts();
+          startPrompts();
+        })
+        .catch((err) => console.log(err));
     });
 }
 // Renders all employee's full names from query into roles array
@@ -261,14 +258,10 @@ function updateEmployee() {
               `UPDATE employee SET role_id= ${role_id} WHERE first_name="${firstName}";`
             )
             .then((result) => {
-              db.query(allEmployeesString(), (err, result) =>
-                err ? console.log(err) : console.table(result)
-              );
+              console.log(`Updates employee's role!`);
 
               startPrompts();
             });
-
-          startPrompts();
         })
         .catch((err) => console.log(err));
     });
@@ -279,4 +272,4 @@ app.use((req, res) => {
   res.status(404).end();
 });
 
-// app.listen(PORT, () => console.log(`listening at PORT ${PORT}`));
+app.listen(PORT, () => console.log(`listening at PORT ${PORT}`));
