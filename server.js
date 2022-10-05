@@ -24,9 +24,9 @@ const db = mysql.createConnection(
     password: "",
     database: "employee_tracker",
   },
-  console.log(`Connected to the employee_tracker database.`)
+  console.log(`Connected to the employee_tracker database.`, startPrompts())
 );
-startPrompts();
+
 function startPrompts() {
   inquirer
     .prompt([
@@ -97,55 +97,73 @@ function addDepartmentPrompts() {
     .then((answer) => {
       const department = answer.department;
 
-      db.query(
-        `INSERT INTO department (name) VALUES (?);`,
-        department,
-        (err, result) => {
-          err
-            ? console.log(err)
-            : console.log(`Added ${department} to the database.`);
+      db.promise()
+        .query(`INSERT INTO department (name) VALUES ('${department}');`)
+        .then(() => {
+          console.log(`Added ${department} to the database.`);
           startPrompts();
-        }
-      );
+        })
+        .catch((err) => console.log(err));
     });
 }
+
 function addRolePrompts() {
   let array = [];
-  db.query(allDepartmentString(), (err, result) => {
-    result.forEach((element) => array.push(element.name));
-  });
+  let choices = [];
 
-  inquirer
-    .prompt([
-      {
-        type: "input",
-        name: "role",
-        message: "What is the name of the role?",
-      },
-      {
-        type: "input",
-        name: "salary",
-        message: "What is the salary of the role?",
-      },
-      {
-        type: "list",
-        name: "department",
-        message: "Which department does the role belong to?",
-        choices: array,
-      },
-    ])
-    .then((results) => {
-      let { role, salary, department } = results;
-      // To find department_id from array of roles
-      const departmentId = array.indexOf(department) + 1;
+  db.promise()
+    .query(allDepartmentString())
+    .then((result) => {
+      result[0].forEach((element) => {
+        array.push({ name: element.name, value: element.id });
+      });
 
-      db.query(
-        `INSERT INTO role(title,salary,department_id) VALUES ('${role}','${salary}',${departmentId});`,
-        (err, result) => {
-          err ? console.log(err) : console.log(`Added ${role} to database.`);
-          startPrompts();
-        }
-      );
+      array.forEach((dep) => {
+        choices.push(dep.name);
+      });
+
+      inquirer
+        .prompt([
+          {
+            type: "input",
+            name: "role",
+            message: "What is the name of the role?",
+          },
+          {
+            type: "input",
+            name: "salary",
+            message: "What is the salary of the role?",
+          },
+          {
+            type: "list",
+            name: "department",
+            message: "Which department does the role belong to?",
+            choices: choices,
+          },
+        ])
+        .then((results) => {
+          console.log(results);
+          let { role, salary, department } = results;
+
+          let department_id;
+
+          for (i = 0; i < array.length; i++) {
+            if (department === array[i].name) {
+              department_id = array[i].value;
+            }
+          }
+          db.query(
+            `INSERT INTO role(title,salary,department_id) VALUES ('${role}',${parseInt(
+              salary
+            )},${department_id});`,
+            (err, result) => {
+              err
+                ? console.log(err)
+                : console.log(`Added ${role} to database.`);
+              startPrompts();
+            }
+          );
+        });
     });
 }
 
